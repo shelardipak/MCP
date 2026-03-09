@@ -19,13 +19,16 @@ async def run_lint_analysis(code: str, custom_rules: dict = None):
     with open(temp_file, "w") as f:
         f.write(code)
 
+    print("Running pylint on the code...temp file created:", temp_file)
     # Run pylint as a subprocess
     result = subprocess.run(
-        ["pylint", "--output-format=json", temp_file],
+        ["python", "-m", "pylint", "--output-format=json", temp_file],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True
     )
+
+    print("Pylint completed with return code:", result.returncode)
 
     # Parse pylint JSON output
     issues = []
