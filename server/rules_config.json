@@ -1,0 +1,6 @@
+{
+  "max-line-length": 100,
+  "variable-naming-style": "snake_case",
+  "allow-print": false,
+  "require-docstrings": true
+}
