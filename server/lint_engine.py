@@ -1,6 +1,9 @@
 import os
 import json
 import subprocess
+from pylint.lint import Run
+from pylint.reporters.json_reporter import JSONReporter
+from io import StringIO
 
 async def run_lint_analysis(code: str, custom_rules: dict = None):
     """
@@ -14,45 +17,41 @@ async def run_lint_analysis(code: str, custom_rules: dict = None):
     Returns:
         List of issues found in the code
     """
-    # Save the code to a temporary file
     temp_file = "temp_code.py"
     with open(temp_file, "w") as f:
-        f.write(code)
-
-    print("Running pylint on the code...temp file created:", temp_file)
-    # Run pylint as a subprocess
-    result = subprocess.run(
-        ["python", "-m", "pylint", "--output-format=json", temp_file],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True
-    )
-
-    print("Pylint completed with return code:", result.returncode)
-
-    # Parse pylint JSON output
+      f.write(code)
+    output = StringIO()
+    reporter = JSONReporter(output=output)
     issues = []
-    if result.stdout:
-        try:
-            pylint_output = json.loads(result.stdout)
-            for message in pylint_output:
-                issues.append({
-                    "line": message["line"],
-                    "issue": message["message"],
-                    "suggestion": message["symbol"],
-                    "severity": message["type"],
-                    "rule": message["message-id"]
-                })
-        except json.JSONDecodeError:
-            issues.append({
-                "line": 0,
-                "issue": "Failed to parse pylint output",
-                "suggestion": "Ensure pylint is installed and working correctly",
-                "severity": "error",
-                "rule": "pylint-output"
-            })
-
-    # Clean up temporary file
-    os.remove(temp_file)
-
+    try:
+      Run([temp_file], reporter=reporter, exit=False)
+      output.seek(0)
+      result = output.read()
+      try:
+        pylint_output = json.loads(result)
+        for message in pylint_output:
+          issues.append({
+            "line": message["line"],
+            "issue": message["message"],
+            "suggestion": message["symbol"],
+            "rule": message["message-id"]
+          })
+      except Exception as parse_e:
+        issues.append({
+          "line": 0,
+          "issue": f"Failed to parse pylint output: {parse_e}",
+          "suggestion": "Ensure pylint is installed and working correctly",
+          "severity": "error",
+          "rule": "pylint-output"
+        })
+    except Exception as e:
+      issues.append({
+        "line": 0,
+        "issue": f"Pylint error: {e}",
+        "suggestion": "Check pylint installation",
+        "severity": "error",
+        "rule": "pylint-error"
+      })
+    finally:
+      os.remove(temp_file)
     return issues

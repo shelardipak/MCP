@@ -43,10 +43,7 @@ async def mcp_linting_flow():
                 # Get available tools from MCP server
                 tools_list = await session.list_tools()
                 print(f"✓ Connected to MCP server")
-                print(f"✓ Available tools: {[tool.name for tool in tools_list.tools]}\n")
-
-                if not tools_list.tools:
-                    raise ValueError("No tools available from the MCP server")
+                print(f"✓ Available tools in MCP server: {[tool.name for tool in tools_list.tools]}\n")
 
                 # Send available tools to LLM for selection
                 tool_selection_prompt = [
@@ -61,10 +58,6 @@ async def mcp_linting_flow():
                     }
                 ]
 
-                #tool_selection_response = await openai_client.chat.completions.create(
-                #    model="gpt-4o-mini",
-                #    messages=tool_selection_prompt
-                #)
                 uri = 'https://api-dev1.mandg.co.uk/enterprise/azureopenai/openai/v1/chat/completions'
                 api_key = os.getenv("OPENAI_API_KEY")
                 correlation_id = str(uuid.uuid4())
@@ -92,7 +85,7 @@ async def mcp_linting_flow():
                     )
 
                 print("="*70)
-                print("STEP 2: Executing selected linter tool")
+                print("STEP 2: Executing selected linter tool on MCP server")
                 print("="*70)
 
                 # Load custom rules from rules_config.json
@@ -122,10 +115,6 @@ async def mcp_linting_flow():
                     }
                 ]
 
-                # refinement_response = await openai_client.chat.completions.create(
-                #     model="gpt-4o-mini",
-                #     messages=refinement_prompt
-                # )
                 uri = 'https://api-dev1.mandg.co.uk/enterprise/azureopenai/openai/v1/chat/completions'
                 api_key = os.getenv("OPENAI_API_KEY")
                 correlation_id = str(uuid.uuid4())
@@ -145,7 +134,6 @@ async def mcp_linting_flow():
                 print("="*70)
                 print("STEP 3: Refining linting results with LLM")
                 print("="*70)
-                print("\n✓ \n")
                 print(refinement_response['choices'][0]['message']['content'])
     except Exception as e:
         import anyio
